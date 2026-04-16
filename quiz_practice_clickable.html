@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Practice</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f6f8fb;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 950px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+    .muted {
+      color: #6b7280;
+    }
+    .topbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+    }
+    .question {
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .question.correct {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
+    .question.incorrect {
+      border-color: #dc2626;
+      background: #fef2f2;
+    }
+    .q-title {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .q-type {
+      display: inline-block;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #374151;
+      margin-bottom: 12px;
+    }
+    .options {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    label.option {
+      display: block;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.2s ease;
+      background: white;
+    }
+    label.option:hover {
+      border-color: #6366f1;
+      background: #f8faff;
+    }
+    .option input {
+      margin-right: 10px;
+    }
+    .controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    .primary {
+      background: #4f46e5;
+      color: white;
+    }
+    .primary:hover { background: #4338ca; }
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+    .secondary:hover { background: #d1d5db; }
+    .hidden {
+      display: none;
+    }
+    .answer-line {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    .correct-text { color: #166534; font-weight: 700; }
+    .wrong-text { color: #991b1b; font-weight: 700; }
+    .footer-note {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+    .wrong-list .question {
+      margin-top: 14px;
+    }
+    @media (max-width: 640px) {
+      .card { padding: 18px; }
+      button { width: 100%; }
+      .controls { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h1>Quiz Practice</h1>
+          <div class="muted">Random order · Click to answer · Auto scoring · Wrong answer review</div>
+        </div>
+        <div class="stats">
+          <div class="badge">Total: <span id="totalCount">0</span></div>
+          <div class="badge">Big Data 4V: Volume, Velocity, Variety, Veracity</div>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="primary" id="startBtn">Start / Restart Quiz</button>
+        <button class="secondary" id="submitBtn">Submit Answers</button>
+        <button class="secondary" id="scrollResultBtn">Go to Result</button>
+      </div>
+      <div class="footer-note">Single choice uses round buttons. Multiple choice uses checkboxes.</div>
+    </div>
+
+    <div id="quizArea"></div>
+
+    <div id="resultArea" class="card hidden">
+      <h2>Quiz Result</h2>
+      <p id="scoreText"></p>
+      <p id="accuracyText"></p>
+      <div id="perfectText" class="hidden"><strong>Perfect score. No wrong answers.</strong></div>
+    </div>
+
+    <div id="wrongArea" class="card hidden">
+      <h2>Wrong Answer Review</h2>
+      <div id="wrongList" class="wrong-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      {
+        type: "single",
+        question: "1. In Infrastructure as a Service (IaaS), which of the following is NOT under the consumer's control?",
+        options: {
+          A: "Storage space",
+          B: "Operating system",
+          C: "Cloud infrastructure",
+          D: "Deployed applications"
+        },
+        answer: ["C"]
+      },
+      {
+        type: "single",
+        question: "2. In the future, most of the massive new data generated globally will be in unstructured or semi-structured forms. What term do IT professionals use to describe this phenomenon?",
+        options: {
+          A: "Database",
+          B: "Data Mining",
+          C: "Data Warehouse",
+          D: "Big Data"
+        },
+        answer: ["D"]
+      },
+      {
+        type: "single",
+        question: '3. Each database transaction must have ACID properties. What do "A" and "I" stand for?',
+        options: {
+          A: "A: Atomicity, I: Isolation",
+          B: "A: Human factors, I: Intelligence",
+          C: "A: Human factors, I: Isolation",
+          D: "A: Atomicity, I: Intelligence"
+        },
+        answer: ["A"]
+      },
+      {
+        type: "single",
+        question: "4. Which of the following are the three dimensions for managing corporate risks?",
+        options: {
+          A: "Basic Analysis, Advanced Prediction, and Prescriptive Analysis",
+          B: "Massive, Diverse, and Continuously Transmitted Information",
+          C: "Collection, Calculation, and Analysis",
+          D: "Information, Processes, and Organization"
+        },
+        answer: ["D"]
+      },
+      {
+        type: "single",
+        question: '5. A "Data Model" is defined by Data Structure, Integrity Constraints, and which of the following?',
+        options: {
+          A: "Data Control Language",
+          B: "Data Source",
+          C: "Data Operations",
+          D: "Storage Structure"
+        },
+        answer: ["C"]
+      },
+      {
+        type: "single",
+        question: "6. Which of the following belongs to the three application layers of big data analysis?",
+        options: {
+          A: "Statistical Analysis",
+          B: "Government Reports",
+          C: "Prescriptive Analysis",
+          D: "Transaction Rankings"
+        },
+        answer: ["C"]
+      },
+      {
+        type: "single",
+        question: "7. In the application of big data analysis in the financial industry, which of the following should be the application direction for customer relationship management?",
+        options: {
+          A: "Provide support for civil servants' asset declaration",
+          B: "Establish customer personal data when customers open accounts",
+          C: "Establish a 360-degree customer view and integrated customer master file information",
+          D: "Assist customers in handling tax-related matters"
+        },
+        answer: ["C"]
+      },
+      {
+        type: "single",
+        question: "8. Which of the following is NOT an advantage of cloud computing technology?",
+        options: {
+          A: "Measurable service",
+          B: "High confidentiality",
+          C: "High accessibility",
+          D: "High scalability"
+        },
+        answer: ["B"]
+      },
+      {
+        type: "single",
+        question: "9. Which of the following is NOT an object of data cleaning in big data analysis?",
+        options: {
+          A: "Handling missing values",
+          B: "Handling swapped values",
+          C: "Handling outliers",
+          D: "Handling duplicate values"
+        },
+        answer: ["B"]
+      },
+      {
+        type: "single",
+        question: "10. Which attack behavior exploits undiscovered or unpublished software security vulnerabilities to implant malicious programs and other attacks?",
+        options: {
+          A: "Phishing",
+          B: "Zero-day attack",
+          C: "Network intrusion",
+          D: "Botnet"
+        },
+        answer: ["B"]
+      },
+      {
+        type: "single",
+        question: "11. What constitutes an operating system? A. Kernel B. Application programs C. Operating environment D. Automatic network error repair",
+        options: {
+          A: "ABCD",
+          B: "ACD",
+          C: "AD",
+          D: "AC"
+        },
+        answer: ["D"]
+      },
+      {
+        type: "single",
+        question: "12. Which of the following is generally NOT part of stress testing for software?",
+        options: {
+          A: "Having users use the software in a noisy environment",
+          B: "Simulating user connections several times higher than the normal online number",
+          C: "Executing test cases that require extensive memory usage",
+          D: "Executing test cases that require massive database access"
+        },
+        answer: ["A"]
+      },
+      {
+        type: "multiple",
+        question: "13. Regarding the Certificate Authority (CA), which of the following statements are CORRECT? (Multiple Choice)",
+        options: {
+          A: "The CA signs digital certificates using its own public key",
+          B: "The format of digital certificates complies with the X.509 standard",
+          C: "It may use the RSA algorithm during operation",
+          D: "It regularly publishes the Certificate Revocation List (CRL)"
+        },
+        answer: ["B", "C", "D"]
+      },
+      {
+        type: "multiple",
+        question: "14. Which of the following modeling diagrams are used in object-oriented system analysis? (Multiple Choice)",
+        options: {
+          A: "Component Diagram",
+          B: "Data Flow Diagram",
+          C: "Object Diagram",
+          D: "Class Diagram"
+        },
+        answer: ["A", "C", "D"]
+      },
+      {
+        type: "multiple",
+        question: "15. Regarding the use of public and private keys in digital signatures, which of the following statements are CORRECT? (Multiple Choice)",
+        options: {
+          A: "Others cannot use the issuer's public key to verify documents signed by the issuer using their private key",
+          B: 'A digital signature is a series of binary digits, and its function is similar to a traditional "signature"',
+          C: "Use the private key for encryption (equivalent to generating a signature) and the public key for decryption (equivalent to verify the signature)",
+          D: 'It provides functions to ensure the "integrity" of the transmitted message and the "non-repudiation" of the sender'
+        },
+        answer: ["B", "C", "D"]
+      },
+      {
+        type: "multiple",
+        question: '16. Which of the following are common "social engineering" attack methods? (Multiple Choice)',
+        options: {
+          A: "Spoofed emails",
+          B: "Phone fraud",
+          C: "Password cracking using dictionary attack",
+          D: "Phishing"
+        },
+        answer: ["A", "B", "D"]
+      },
+      {
+        type: "single",
+        question: "17. What are the 4Vs of Big Data?",
+        options: {
+          A: "Volume, Velocity, Variety, Veracity",
+          B: "Value, Vision, Variety, Veracity",
+          C: "Volume, Value, Vision, Velocity",
+          D: "Velocity, Version, Volume, Visual"
+        },
+        answer: ["A"]
+      }
+    ];
+
+    let currentQuestions = [];
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function createQuiz() {
+      currentQuestions = shuffleArray(questions);
+      document.getElementById("totalCount").textContent = currentQuestions.length;
+      const quizArea = document.getElementById("quizArea");
+      const resultArea = document.getElementById("resultArea");
+      const wrongArea = document.getElementById("wrongArea");
+      const wrongList = document.getElementById("wrongList");
+      const perfectText = document.getElementById("perfectText");
+
+      resultArea.classList.add("hidden");
+      wrongArea.classList.add("hidden");
+      wrongList.innerHTML = "";
+      perfectText.classList.add("hidden");
+      quizArea.innerHTML = "";
+
+      currentQuestions.forEach((q, index) => {
+        const div = document.createElement("div");
+        div.className = "card question";
+        div.id = `question-${index}`;
+
+        const typeText = q.type === "single" ? "Single Choice" : "Multiple Choice";
+        const inputType = q.type === "single" ? "radio" : "checkbox";
+
+        let optionsHtml = "";
+        for (const [key, value] of Object.entries(q.options)) {
+          optionsHtml += `
+            <label class="option">
+              <input type="${inputType}" name="q${index}" value="${key}">
+              <strong>${key}.</strong> ${value}
+            </label>
+          `;
+        }
+
+        div.innerHTML = `
+          <div class="q-type">${typeText}</div>
+          <div class="q-title">${index + 1}. ${q.question}</div>
+          <div class="options">${optionsHtml}</div>
+          <div class="answer-line hidden" id="feedback-${index}"></div>
+        `;
+
+        quizArea.appendChild(div);
+      });
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function getUserAnswer(index) {
+      const selected = [...document.querySelectorAll(`input[name="q${index}"]:checked`)];
+      return selected.map(el => el.value).sort();
+    }
+
+    function isSameAnswer(a, b) {
+      if (a.length !== b.length) return false;
+      const x = [...a].sort();
+      const y = [...b].sort();
+      return x.every((v, i) => v === y[i]);
+    }
+
+    function submitQuiz() {
+      let score = 0;
+      const wrongItems = [];
+
+      currentQuestions.forEach((q, index) => {
+        const userAnswer = getUserAnswer(index);
+        const correctAnswer = [...q.answer].sort();
+        const block = document.getElementById(`question-${index}`);
+        const feedback = document.getElementById(`feedback-${index}`);
+        const isCorrect = isSameAnswer(userAnswer, correctAnswer);
+
+        block.classList.remove("correct", "incorrect");
+        feedback.classList.remove("hidden");
+
+        if (isCorrect) {
+          score++;
+          block.classList.add("correct");
+          feedback.innerHTML = `<span class="correct-text">Correct</span> ｜ Your answer: ${userAnswer.join(", ") || "No answer"} ｜ Correct answer: ${correctAnswer.join(", ")}`;
+        } else {
+          block.classList.add("incorrect");
+          feedback.innerHTML = `<span class="wrong-text">Wrong</span> ｜ Your answer: ${userAnswer.join(", ") || "No answer"} ｜ Correct answer: ${correctAnswer.join(", ")}`;
+          wrongItems.push({ q, userAnswer, correctAnswer });
+        }
+      });
+
+      const total = currentQuestions.length;
+      const accuracy = ((score / total) * 100).toFixed(1);
+
+      document.getElementById("scoreText").textContent = `Score: ${score} / ${total}`;
+      document.getElementById("accuracyText").textContent = `Accuracy: ${accuracy}%`;
+      document.getElementById("resultArea").classList.remove("hidden");
+
+      const wrongArea = document.getElementById("wrongArea");
+      const wrongList = document.getElementById("wrongList");
+      const perfectText = document.getElementById("perfectText");
+      wrongList.innerHTML = "";
+
+      if (wrongItems.length === 0) {
+        perfectText.classList.remove("hidden");
+        wrongArea.classList.add("hidden");
+      } else {
+        perfectText.classList.add("hidden");
+        wrongArea.classList.remove("hidden");
+
+        wrongItems.forEach((item, idx) => {
+          const div = document.createElement("div");
+          div.className = "question incorrect";
+
+          let optionHtml = "";
+          for (const [key, value] of Object.entries(item.q.options)) {
+            optionHtml += `<div><strong>${key}.</strong> ${value}</div>`;
+          }
+
+          div.innerHTML = `
+            <div class="q-title">Wrong Question ${idx + 1}: ${item.q.question}</div>
+            <div>${optionHtml}</div>
+            <div class="answer-line">
+              <span class="wrong-text">Your answer:</span> ${item.userAnswer.join(", ") || "No answer"}<br>
+              <span class="correct-text">Correct answer:</span> ${item.correctAnswer.join(", ")}
+            </div>
+          `;
+          wrongList.appendChild(div);
+        });
+      }
+
+      document.getElementById("resultArea").scrollIntoView({ behavior: "smooth" });
+    }
+
+    document.getElementById("startBtn").addEventListener("click", createQuiz);
+    document.getElementById("submitBtn").addEventListener("click", submitQuiz);
+    document.getElementById("scrollResultBtn").addEventListener("click", () => {
+      document.getElementById("resultArea").scrollIntoView({ behavior: "smooth" });
+    });
+
+    createQuiz();
+  </script>
+</body>
+</html>
