@@ -152,7 +152,7 @@
       <div class="topbar">
         <div>
           <h1>Quiz Practice</h1>
-          <div class="muted">Random order · Click to answer · Auto scoring · Wrong answer review</div>
+          <div class="muted">Random question order · Random option order · Click to answer · Auto scoring · Wrong answer review</div>
         </div>
         <div class="stats">
           <div class="badge">Total: <span id="totalCount">0</span></div>
@@ -164,7 +164,7 @@
         <button class="secondary" id="submitBtn">Submit Answers</button>
         <button class="secondary" id="scrollResultBtn">Go to Result</button>
       </div>
-      <div class="footer-note">Single choice uses round buttons. Multiple choice uses checkboxes.</div>
+      <div class="footer-note">Single choice uses round buttons. Multiple choice uses checkboxes. Both question order and option order are randomized each time.</div>
     </div>
 
     <div id="quizArea"></div>
@@ -208,7 +208,7 @@
       },
       {
         type: "single",
-        question: '3. Each database transaction must have ACID properties. What do "A" and "I" stand for?',
+        question: "3. Each database transaction must have ACID properties. What do \"A\" and \"I\" stand for?",
         options: {
           A: "A: Atomicity, I: Isolation",
           B: "A: Human factors, I: Intelligence",
@@ -230,7 +230,7 @@
       },
       {
         type: "single",
-        question: '5. A "Data Model" is defined by Data Structure, Integrity Constraints, and which of the following?',
+        question: "5. A \"Data Model\" is defined by Data Structure, Integrity Constraints, and which of the following?",
         options: {
           A: "Data Control Language",
           B: "Data Source",
@@ -343,15 +343,15 @@
         question: "15. Regarding the use of public and private keys in digital signatures, which of the following statements are CORRECT? (Multiple Choice)",
         options: {
           A: "Others cannot use the issuer's public key to verify documents signed by the issuer using their private key",
-          B: 'A digital signature is a series of binary digits, and its function is similar to a traditional "signature"',
+          B: "A digital signature is a series of binary digits, and its function is similar to a traditional \"signature\"",
           C: "Use the private key for encryption (equivalent to generating a signature) and the public key for decryption (equivalent to verify the signature)",
-          D: 'It provides functions to ensure the "integrity" of the transmitted message and the "non-repudiation" of the sender'
+          D: "It provides functions to ensure the \"integrity\" of the transmitted message and the \"non-repudiation\" of the sender"
         },
         answer: ["B", "C", "D"]
       },
       {
         type: "multiple",
-        question: '16. Which of the following are common "social engineering" attack methods? (Multiple Choice)',
+        question: "16. Which of the following are common \"social engineering\" attack methods? (Multiple Choice)",
         options: {
           A: "Spoofed emails",
           B: "Phone fraud",
@@ -385,7 +385,16 @@
     }
 
     function createQuiz() {
-      currentQuestions = shuffleArray(questions);
+      currentQuestions = shuffleArray(questions).map(q => {
+        const shuffledOptions = shuffleArray(
+          Object.entries(q.options).map(([key, value]) => ({ key, value }))
+        );
+        return {
+          ...q,
+          shuffledOptions
+        };
+      });
+
       document.getElementById("totalCount").textContent = currentQuestions.length;
       const quizArea = document.getElementById("quizArea");
       const resultArea = document.getElementById("resultArea");
@@ -408,14 +417,14 @@
         const inputType = q.type === "single" ? "radio" : "checkbox";
 
         let optionsHtml = "";
-        for (const [key, value] of Object.entries(q.options)) {
+        q.shuffledOptions.forEach(({ key, value }) => {
           optionsHtml += `
             <label class="option">
               <input type="${inputType}" name="q${index}" value="${key}">
               <strong>${key}.</strong> ${value}
             </label>
           `;
-        }
+        });
 
         div.innerHTML = `
           <div class="q-type">${typeText}</div>
@@ -491,9 +500,9 @@
           div.className = "question incorrect";
 
           let optionHtml = "";
-          for (const [key, value] of Object.entries(item.q.options)) {
+          Object.entries(item.q.options).forEach(([key, value]) => {
             optionHtml += `<div><strong>${key}.</strong> ${value}</div>`;
-          }
+          });
 
           div.innerHTML = `
             <div class="q-title">Wrong Question ${idx + 1}: ${item.q.question}</div>
